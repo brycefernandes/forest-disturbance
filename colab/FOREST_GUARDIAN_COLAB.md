@@ -21,10 +21,14 @@ Before running the smoke test, check that Colab has the updated Docker-bootstrap
 %%bash
 cd /content/forest-disturbance
 git rev-parse --short HEAD || true
-grep -n "ensure_docker\|Installing Docker packages" scripts/colab_dphi_simsat_smoke.sh
+if grep -n "ensure_docker\|Installing Docker packages" scripts/colab_dphi_simsat_smoke.sh; then
+  echo "OK: Docker-bootstrap smoke script is present."
+else
+  echo "OLD SCRIPT: Docker-bootstrap smoke script is missing. Run the refresh cell below." >&2
+fi
 ```
 
-If `grep` prints nothing and you still see `Docker is required for the official DPhi-Space/SimSat quick start`, Colab is running an old commit. Pull the latest branch or copy the patched script from this PR before retrying.
+If this prints `OLD SCRIPT` and you still see `Docker is required for the official DPhi-Space/SimSat quick start`, Colab is running an old commit. Pull the latest branch or copy the patched script from this PR before retrying. The check cell intentionally does not fail anymore; it prints the diagnosis and lets you continue to the refresh cell.
 
 Fastest fix in Colab if your GitHub repo has not been updated yet:
 
@@ -39,7 +43,12 @@ import urllib.request
 Path('scripts/colab_dphi_simsat_smoke.sh').write_bytes(urllib.request.urlopen(url).read())
 PYCODE
 chmod +x scripts/colab_dphi_simsat_smoke.sh
-grep -n "ensure_docker\|Installing Docker packages" scripts/colab_dphi_simsat_smoke.sh
+if grep -n "ensure_docker\|Installing Docker packages" scripts/colab_dphi_simsat_smoke.sh; then
+  echo "OK: refreshed Docker-bootstrap smoke script."
+else
+  echo "Refresh failed: Docker-bootstrap code still missing." >&2
+  exit 1
+fi
 scripts/colab_dphi_simsat_smoke.sh
 ```
 
