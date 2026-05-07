@@ -39,41 +39,6 @@ mkdir -p "${LOG_DIR}"
 log() { printf '\n[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 run() { log "$*"; "$@"; }
 
-ensure_docker() {
-  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-    log "Docker is already running."
-    return 0
-  fi
-  if ! command -v docker >/dev/null 2>&1; then
-    if ! command -v apt-get >/dev/null 2>&1; then
-      echo "Docker is required, docker is missing, and apt-get is unavailable." >&2
-      exit 1
-    fi
-    log "Installing Docker packages for Colab/runtime."
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -y
-    apt-get install -y docker.io docker-compose-plugin
-  fi
-  if docker info >/dev/null 2>&1; then
-    log "Docker daemon is running."
-    return 0
-  fi
-  log "Starting Docker daemon in the background."
-  mkdir -p "${LOG_DIR}" /tmp/docker-data
-  nohup dockerd --host=unix:///var/run/docker.sock --data-root=/tmp/docker-data > "${LOG_DIR}/dockerd.log" 2>&1 &
-  echo $! > "${LOG_DIR}/dockerd.pid"
-  for attempt in $(seq 1 90); do
-    if docker info >/dev/null 2>&1; then
-      log "Docker daemon is ready."
-      return 0
-    fi
-    sleep 2
-  done
-  echo "Docker daemon did not become ready. Last dockerd logs:" >&2
-  tail -100 "${LOG_DIR}/dockerd.log" >&2 || true
-  exit 1
-}
-
 wait_http() {
   local url="$1"
   local label="$2"
@@ -208,7 +173,14 @@ ensure_simsat() {
     (cd "${SIMSAT_DIR}" && bash -lc "${SIMSAT_START_CMD}") > "${LOG_DIR}/simsat.log" 2>&1 &
     echo $! > "${LOG_DIR}/simsat.pid"
   else
-    ensure_docker
+    if ! command -v docker >/dev/null 2>&1; then
+      cat >&2 <<MSG
+Docker is required to start DPhi-Space/SimSat automatically because the official repository starts via docker compose.
+SimSat repo: ${SIMSAT_REPO_URL}
+If your Colab/runtime does not support Docker, start SimSat externally and set SIMSAT_URL, or provide SIMSAT_START_CMD for a non-Docker launch.
+MSG
+      exit 1
+    fi
     log "Starting official DPhi-Space/SimSat with docker compose from ${SIMSAT_DIR}"
     (cd "${SIMSAT_DIR}" && docker compose up -d --build) | tee "${LOG_DIR}/simsat-docker-compose.log"
   fi

@@ -2,80 +2,18 @@
 
 These are the Colab commands to first prove the official DPhi-Space/SimSat simulation is running, then run the full Forest Guardian pipeline with the smallest LFM2.5 VLM through llama.cpp.
 
-
-## Why your previous paste failed
-
-This failed because the example URL contained `<you>`:
-
-```bash
-git clone https://github.com/<you>/forest-disturbance.git forest-disturbance
-```
-
-In bash, `<you>` is interpreted as input redirection from a file named `you`, so Colab reports `bash: line 4: you: No such file or directory`. Use `YOUR_GITHUB_USER` or your real GitHub URL instead, without angle brackets.
-
 ## Cell 1 — SimSat simulation smoke test
 
 This starts the official `DPhi-Space/SimSat` repository with Docker Compose, starts the satellite simulation through the dashboard API, then downloads one Sentinel RGB image.
-
-Before running this cell, the Forest Guardian code must exist in Colab. Choose **one** of these two options.
-
-### Option A — clone your real GitHub repo
-
-Use this if you have pushed Forest Guardian to GitHub. Replace the URL with the actual repo URL. There is no default URL in this workspace because this Codex container has no configured Git remote.
 
 ```bash
 %%bash
 set -euo pipefail
 cd /content
-
-FOREST_GUARDIAN_REPO=""
-if [[ -z "${FOREST_GUARDIAN_REPO}" ]]; then
-  cat >&2 <<'MSG'
-Set FOREST_GUARDIAN_REPO to the real GitHub URL first.
-Example:
-  FOREST_GUARDIAN_REPO="https://github.com/alice/forest-disturbance.git"
-
-Do not paste placeholders such as <you> or YOUR_GITHUB_USER.
-MSG
-  exit 1
-fi
-
 rm -rf forest-disturbance
-git clone "${FOREST_GUARDIAN_REPO}" forest-disturbance
+git clone https://github.com/<you>/forest-disturbance.git forest-disturbance
 cd forest-disturbance
 
-scripts/colab_dphi_simsat_smoke.sh
-```
-
-### Option B — upload a zip if you do not have a GitHub URL yet
-
-Run this Python cell, upload a zip of the repo, then continue with Cell 2 after the smoke test finishes.
-
-```python
-from google.colab import files
-import pathlib, shutil, zipfile
-
-uploaded = files.upload()
-zip_name = next(name for name in uploaded if name.endswith('.zip'))
-root = pathlib.Path('/content')
-repo_dir = root / 'forest-disturbance'
-if repo_dir.exists():
-    shutil.rmtree(repo_dir)
-with zipfile.ZipFile(zip_name) as zf:
-    zf.extractall(root)
-# If the zip contains one top-level folder, rename it to /content/forest-disturbance.
-folders = [p for p in root.iterdir() if p.is_dir() and p.name.startswith('forest') and p.name != 'forest-disturbance']
-if not repo_dir.exists() and folders:
-    folders[0].rename(repo_dir)
-assert (repo_dir / 'scripts' / 'colab_dphi_simsat_smoke.sh').exists(), 'Uploaded zip does not look like this repo'
-```
-
-Then run:
-
-```bash
-%%bash
-set -euo pipefail
-cd /content/forest-disturbance
 scripts/colab_dphi_simsat_smoke.sh
 ```
 
@@ -90,7 +28,7 @@ Expected output files:
 - `/content/simsat_smoke_outputs/current_position.json`
 - `/content/simsat_smoke_outputs/sentinel_rgb.png`
 
-> Note: the official SimSat quick start uses `docker compose up`. The smoke script now attempts to install `docker.io`/`docker-compose-plugin` and start `dockerd` when Docker is missing. If the Colab/runtime blocks Docker daemon startup, run SimSat on another machine and set `SIMSAT_URL` to that API URL.
+> Note: the official SimSat quick start uses `docker compose up`. If your Colab runtime does not provide Docker, run SimSat on another machine and set `SIMSAT_URL` to that API URL.
 
 ## Cell 2 — Full Forest Guardian E2E
 
