@@ -10,41 +10,6 @@ SMOKE_OUT_DIR="${SMOKE_OUT_DIR:-/content/simsat_smoke_outputs}"
 
 mkdir -p "${LOG_DIR}" "${SMOKE_OUT_DIR}"
 log() { printf '\n[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
-ensure_docker() {
-  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-    log "Docker is already running."
-    return 0
-  fi
-  if ! command -v docker >/dev/null 2>&1; then
-    if ! command -v apt-get >/dev/null 2>&1; then
-      echo "Docker is required, docker is missing, and apt-get is unavailable." >&2
-      exit 1
-    fi
-    log "Installing Docker packages for Colab/runtime."
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -y
-    apt-get install -y docker.io docker-compose-plugin
-  fi
-  if docker info >/dev/null 2>&1; then
-    log "Docker daemon is running."
-    return 0
-  fi
-  log "Starting Docker daemon in the background."
-  mkdir -p "${LOG_DIR}" /tmp/docker-data
-  nohup dockerd --host=unix:///var/run/docker.sock --data-root=/tmp/docker-data > "${LOG_DIR}/dockerd.log" 2>&1 &
-  echo $! > "${LOG_DIR}/dockerd.pid"
-  for attempt in $(seq 1 90); do
-    if docker info >/dev/null 2>&1; then
-      log "Docker daemon is ready."
-      return 0
-    fi
-    sleep 2
-  done
-  echo "Docker daemon did not become ready. Last dockerd logs:" >&2
-  tail -100 "${LOG_DIR}/dockerd.log" >&2 || true
-  exit 1
-}
-
 wait_http() {
   local url="$1" label="$2" attempts="${3:-120}"
   for attempt in $(seq 1 "${attempts}"); do
@@ -63,7 +28,13 @@ if [[ ! -d "${SIMSAT_DIR}/.git" ]]; then
   git clone --depth 1 "${SIMSAT_REPO_URL}" "${SIMSAT_DIR}"
 fi
 
-ensure_docker
+if ! command -v docker >/dev/null 2>&1; then
+  cat >&2 <<'MSG'
+Docker is required for the official DPhi-Space/SimSat quick start (`docker compose up`).
+If this Colab runtime has no Docker, run SimSat externally and set SIMSAT_URL for Forest Guardian.
+MSG
+  exit 1
+fi
 
 log "Starting official DPhi-Space/SimSat with docker compose"
 (cd "${SIMSAT_DIR}" && docker compose up -d --build) | tee "${LOG_DIR}/simsat-smoke-docker-compose.log"

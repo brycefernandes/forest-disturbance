@@ -67,9 +67,7 @@ For a clean Colab run that builds llama.cpp, downloads/runs the smallest LFM2.5 
 scripts/colab_real_e2e.sh
 ```
 
-When running from a fresh Colab notebook, use the cells in `colab/FOREST_GUARDIAN_COLAB.md`.
-> Colab note: this Codex workspace has no configured GitHub remote, so there is no repo URL I can pre-fill. Either push this branch to GitHub and set `FOREST_GUARDIAN_REPO` to that real URL, or upload a zip of the repo using the documented Colab upload option. Do not paste placeholders such as `<you>` or `YOUR_GITHUB_USER` into bash.
-The first runnable cell starts and checks the official `DPhi-Space/SimSat` simulation; the second cell builds/runs LFM2.5-VL and runs the full Forest Guardian evidence pipeline.
+When running from a fresh Colab notebook, use the two copy/paste cells in `colab/FOREST_GUARDIAN_COLAB.md`. The first cell starts and checks the official `DPhi-Space/SimSat` simulation; the second cell builds/runs LFM2.5-VL and runs the full Forest Guardian evidence pipeline.
 
 ## DPhi-Space/SimSat smoke test
 
@@ -79,7 +77,7 @@ To test only the official SimSat simulation in Colab before downloading/running 
 scripts/colab_dphi_simsat_smoke.sh
 ```
 
-This clones `https://github.com/DPhi-Space/SimSat.git`, installs/starts Docker if needed, runs `docker compose up -d --build`, starts the simulation through the dashboard command API, and saves a Sentinel RGB PNG smoke-test output.
+This clones `https://github.com/DPhi-Space/SimSat.git`, starts it with `docker compose up -d --build`, starts the simulation through the dashboard command API, and saves a Sentinel RGB PNG smoke-test output.
 
 ## Real E2E check
 
